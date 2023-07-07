@@ -11,7 +11,8 @@ def post_login():
         error = dbhelper.check_endpoint_info(request.json,["username","password"])
         if(error != None):
             return make_response(jsonify(error),400)
-        results = dbhelper.run_procedure("call ()",[request.json.get("username"),request.json.get("password")])
+        token=uuid.uuid4().hex
+        results = dbhelper.run_procedure("call post_admin_session(?,?,?)",[request.json.get("username"),request.json.get("password"),token])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
@@ -23,13 +24,14 @@ def post_login():
         print("coding error")
     except ValueError:
         print("value error, try again") 
+
 @app.delete("/api/login-admin")
 def delete_login():
     try:
-        error = dbhelper.check_endpoint_info(request.json,["username","password"])
+        error = dbhelper.check_endpoint_info(request.json,["token"])
         if(error != None):
             return make_response(jsonify(error),400)
-        results = dbhelper.run_procedure("call ()",[request.json.get("username"),request.json.get("password")])
+        results = dbhelper.run_procedure("call delete_admin_session(?)",[request.json.get("token")])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
@@ -41,13 +43,26 @@ def delete_login():
         print("coding error")
     except ValueError:
         print("value error, try again") 
+
 @app.post("/api/blocks")
-def post_blocks():
+def post_block():
     try:
-        error = dbhelper.check_endpoint_info(request.json,["username","password"])
-        if(error != None):
-            return make_response(jsonify(error),400)
-        results = dbhelper.run_procedure("call ()",[request.json.get("username"),request.json.get("password")])
+        is_valid = dbhelper.check_endpoint_info(request.form, ["name","date","info","img_description"])
+        if(is_valid != None):
+            return make_response(jsonify(is_valid), 400)
+        # Use request.files to make sure the uploaded_image is there
+        # Again you can call it whatever you would like
+        is_valid = dbhelper.check_endpoint_info(request.files, ['uploaded_image'])
+        if(is_valid != None):
+            return make_response(jsonify(is_valid), 400)
+
+        # Save the image using the helper found in apihelpers
+        file_name = dbhelper.save_file(request.files['uploaded_image'])
+        # If the filename is None something has gone wrong
+        if(file_name == None):
+            return make_response(jsonify("Sorry, something has gone wrong"), 500)
+        results = dbhelper.run_procedure("call post_block(?,?,?,?,?)",[request.form.get("name"),request.form.get("date"),
+                                                                       file_name,request.form.get("info"),request.form.get("img_description")])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
@@ -58,14 +73,15 @@ def post_blocks():
     except UnboundLocalError:
         print("coding error")
     except ValueError:
-        print("value error, try again") 
+        print("value error, try again")
+
 @app.delete("/api/blocks")
 def delete_blocks():
     try:
-        error = dbhelper.check_endpoint_info(request.json,["username","password"])
+        error = dbhelper.check_endpoint_info(request.json,["token","id"])
         if(error != None):
             return make_response(jsonify(error),400)
-        results = dbhelper.run_procedure("call ()",[request.json.get("username"),request.json.get("password")])
+        results = dbhelper.run_procedure("call delete_block(?,?)",[request.json.get("token"),request.json.get("id")])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
@@ -77,13 +93,11 @@ def delete_blocks():
         print("coding error")
     except ValueError:
         print("value error, try again") 
+
 @app.get("/api/blocks")
 def get_blocks():
     try:
-        error = dbhelper.check_endpoint_info(request.json,["username","password"])
-        if(error != None):
-            return make_response(jsonify(error),400)
-        results = dbhelper.run_procedure("call ()",[request.json.get("username"),request.json.get("password")])
+        results = dbhelper.run_procedure("call get_art()",[])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
@@ -95,13 +109,11 @@ def get_blocks():
         print("coding error")
     except ValueError:
         print("value error, try again") 
+
 @app.get("/api/search")
 def get_blocks():
     try:
-        error = dbhelper.check_endpoint_info(request.json,["username","password"])
-        if(error != None):
-            return make_response(jsonify(error),400)
-        results = dbhelper.run_procedure("call ()",[request.json.get("username"),request.json.get("password")])
+        results = dbhelper.run_procedure("call get_art(?,?)",[request.json.get("name"),request.json.get("date")])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
