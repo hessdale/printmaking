@@ -1,6 +1,6 @@
 import dbcreds
 import dbhelper
-import uuid
+from uuid import uuid4
 from flask import Flask, request, make_response, jsonify
 
 app = Flask(__name__)
@@ -11,8 +11,8 @@ def post_login():
         error = dbhelper.check_endpoint_info(request.json,["username","password"])
         if(error != None):
             return make_response(jsonify(error),400)
-        token=uuid.uuid4().hex
-        results = dbhelper.run_procedure("call post_admin_session(?,?,?)",[request.json.get("username"),request.json.get("password"),token])
+        token=uuid4().hex
+        results = dbhelper.run_procedure("call post_admin_session(?,?,?)",[token,request.json.get("username"),request.json.get("password")])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
@@ -28,10 +28,10 @@ def post_login():
 @app.delete("/api/login-admin")
 def delete_login():
     try:
-        error = dbhelper.check_endpoint_info(request.json,["token"])
+        error = dbhelper.check_endpoint_info(request.headers,["token"])
         if(error != None):
             return make_response(jsonify(error),400)
-        results = dbhelper.run_procedure("call delete_admin_session(?)",[request.json.get("token")])
+        results = dbhelper.run_procedure("call delete_admin_session(?)",[request.headers.get("token")])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
@@ -47,7 +47,7 @@ def delete_login():
 @app.post("/api/blocks")
 def post_block():
     try:
-        is_valid = dbhelper.check_endpoint_info(request.form, ["name","date","info","img_description"])
+        is_valid = dbhelper.check_endpoint_info(request.form, ["name","date","info","img_description","title","publication","block_id","cliff_notes"])
         if(is_valid != None):
             return make_response(jsonify(is_valid), 400)
         # Use request.files to make sure the uploaded_image is there
@@ -61,8 +61,12 @@ def post_block():
         # If the filename is None something has gone wrong
         if(file_name == None):
             return make_response(jsonify("Sorry, something has gone wrong"), 500)
-        results = dbhelper.run_procedure("call post_block(?,?,?,?,?)",[request.form.get("name"),request.form.get("date"),
-                                                                       file_name,request.form.get("info"),request.form.get("img_description")])
+        header_check = dbhelper.check_endpoint_info(request.headers.get("token"))
+        if(header_check != None):
+            return make_response(jsonify(header_check), 400)
+        results = dbhelper.run_procedure("call post_block(?,?,?,?,?,?,?,?,?,?)",[request.headers.get("token"),request.form.get("name"),request.form.get("date"),file_name,request.form.get("info"),
+                                                                       request.form.get("img_description"),request.form.get("title"),request.form.get("publication"),
+                                                                       request.form.get("block_id"),request.form.get("cliff_notes")])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
@@ -97,22 +101,6 @@ def delete_blocks():
 @app.get("/api/blocks")
 def get_blocks():
     try:
-        results = dbhelper.run_procedure("call get_art()",[])
-        if(type(results) == list):
-            return make_response(jsonify(results),200)
-        else:
-            return make_response("sorry something went wrong",500)
-    # some except blocks with possible errors
-    except TypeError:
-        print("invalid input type, try again.")
-    except UnboundLocalError:
-        print("coding error")
-    except ValueError:
-        print("value error, try again") 
-
-@app.get("/api/search")
-def get_blocks():
-    try:
         results = dbhelper.run_procedure("call get_art(?,?)",[request.json.get("name"),request.json.get("date")])
         if(type(results) == list):
             return make_response(jsonify(results),200)
@@ -125,7 +113,6 @@ def get_blocks():
         print("coding error")
     except ValueError:
         print("value error, try again") 
-
 
 
 
