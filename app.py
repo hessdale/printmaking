@@ -47,25 +47,15 @@ def delete_login():
 @app.post("/api/blocks")
 def post_block():
     try:
-        is_valid = dbhelper.check_endpoint_info(request.form, ["name","date","info","img_description","title","publication","block_id","cliff_notes"])
-        if(is_valid != None):
-            return make_response(jsonify(is_valid), 400)
-        # Use request.files to make sure the uploaded_image is there
-        # Again you can call it whatever you would like
-        is_valid = dbhelper.check_endpoint_info(request.files, ['uploaded_image'])
-        if(is_valid != None):
-            return make_response(jsonify(is_valid), 400)
-
-        # Save the image using the helper found in apihelpers
-        file_name = dbhelper.save_file(request.files['uploaded_image'])
-        # If the filename is None something has gone wrong
-        if(file_name == None):
-            return make_response(jsonify("Sorry, something has gone wrong"), 500)
-        header_check = dbhelper.check_endpoint_info(request.headers.get("token"))
-        if(header_check != None):
-            return make_response(jsonify(header_check), 400)
-        results = dbhelper.run_procedure("call post_block(?,?,?,?,?,?,?,?,?,?)",[request.headers.get("token"),request.form.get("name"),request.form.get("date"),file_name,request.form.get("info"),
-                                                                       request.form.get("img_description"),request.form.get("title"),request.form.get("publication"),
+        
+        error = dbhelper.check_endpoint_info(request.form,["date","info","block_id","cliff_notes"])
+        if(error != None):
+            return make_response(jsonify(error),400)
+        # header_check = dbhelper.check_endpoint_info(request.headers.get("token"))
+        # if(header_check != None):
+        #     return make_response(jsonify(header_check), 400)
+        results = dbhelper.run_procedure("call post_block(?,?,?,?,?,?,?,?)",[request.headers.get("token"),request.form.get("name"),request.form.get("date"),request.form.get("info")
+                                                                      ,request.form.get("title"),request.form.get("publication"),
                                                                        request.form.get("block_id"),request.form.get("cliff_notes")])
         if(type(results) == list):
             return make_response(jsonify(results),200)
@@ -114,7 +104,34 @@ def get_blocks():
     except ValueError:
         print("value error, try again") 
 
-
+@app.post("/api/images")
+def post_image():
+    try:
+        # Use request.files to make sure the uploaded_image is there
+        # Again you can call it whatever you would like
+        is_valid = dbhelper.check_endpoint_info(request.files, ['uploaded_image'])
+        if(is_valid != None):
+            return make_response(jsonify(is_valid), 400)
+        # Save the image using the helper found in apihelpers
+        file_name = dbhelper.save_file(request.files['uploaded_image'])
+        # If the filename is None something has gone wrong
+        error = dbhelper.check_endpoint_info(request.form,["block_id","image_description"])
+        if(error != None):
+            return make_response(jsonify(error),400)
+        if(file_name == None):
+            return make_response(jsonify("Sorry, something has gone wrong"), 500)
+        results = dbhelper.run_procedure("call post_image(?,?,?,?)",[request.headers.get("token"),request.form["block_id"],file_name,request.form["image_description"]])
+        if(type(results) == list):
+            return make_response(jsonify(results),200)
+        else:
+            return make_response("sorry something went wrong",500)
+    # some except blocks with possible errors
+    except TypeError:
+        print("invalid input type, try again.")
+    except UnboundLocalError:
+        print("coding error")
+    except ValueError:
+        print("value error, try again") 
 
 if(dbcreds.production_mode == True):
     print("Running Production Mode")
