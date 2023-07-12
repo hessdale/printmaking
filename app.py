@@ -51,9 +51,9 @@ def post_block():
         error = dbhelper.check_endpoint_info(request.form,["date","info","block_id","cliff_notes"])
         if(error != None):
             return make_response(jsonify(error),400)
-        # header_check = dbhelper.check_endpoint_info(request.headers.get("token"))
-        # if(header_check != None):
-        #     return make_response(jsonify(header_check), 400)
+        header_check = dbhelper.check_endpoint_info(request.headers,["token"])
+        if(header_check != None):
+            return make_response(jsonify(header_check), 400)
         results = dbhelper.run_procedure("call post_block(?,?,?,?,?,?,?,?)",[request.headers.get("token"),request.form.get("name"),request.form.get("date"),request.form.get("info")
                                                                       ,request.form.get("title"),request.form.get("publication"),
                                                                        request.form.get("block_id"),request.form.get("cliff_notes")])
@@ -91,7 +91,7 @@ def delete_blocks():
 @app.get("/api/blocks")
 def get_blocks():
     try:
-        results = dbhelper.run_procedure("call get_art(?,?)",[request.json.get("name"),request.json.get("date")])
+        results = dbhelper.run_procedure("call get_blocks()",[])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
@@ -121,6 +121,22 @@ def post_image():
         if(file_name == None):
             return make_response(jsonify("Sorry, something has gone wrong"), 500)
         results = dbhelper.run_procedure("call post_image(?,?,?,?)",[request.headers.get("token"),request.form["block_id"],file_name,request.form["image_description"]])
+        if(type(results) == list):
+            return make_response(jsonify(results),200)
+        else:
+            return make_response("sorry something went wrong",500)
+    # some except blocks with possible errors
+    except TypeError:
+        print("invalid input type, try again.")
+    except UnboundLocalError:
+        print("coding error")
+    except ValueError:
+        print("value error, try again") 
+
+@app.get("/api/images")
+def get_images():
+    try:
+        results = dbhelper.run_procedure("call get_images()",[])
         if(type(results) == list):
             return make_response(jsonify(results),200)
         else:
