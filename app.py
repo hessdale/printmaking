@@ -149,6 +149,63 @@ def get_images():
     except ValueError:
         print("value error, try again") 
 
+@app.get("/api/images_id")
+def get_images_id():
+    try:
+        error = dbhelper.check_endpoint_info(request.args,["block_id"])
+        if(error != None):
+            return make_response(jsonify(error),400)
+        results = dbhelper.run_procedure("call get_id_images(?)",[request.args.get("block_id")])
+        if(type(results) == list):
+            return make_response(jsonify(results),200)
+        else:
+            return make_response("sorry something went wrong",500)
+    # some except blocks with possible errors
+    except TypeError:
+        print("invalid input type, try again.")
+    except UnboundLocalError:
+        print("coding error")
+    except ValueError:
+        print("value error, try again")
+
+@app.get("/api/blocks_id")
+def get_blocks_id():
+    try:
+        error = dbhelper.check_endpoint_info(request.args,["block_id"])
+        if(error != None):
+            return make_response(jsonify(error),400)
+        results = dbhelper.run_procedure("call get_id_blocks(?)",[request.args.get("block_id")])
+        if(type(results) == list):
+            return make_response(jsonify(results),200)
+        else:
+            return make_response("sorry something went wrong",500)
+    # some except blocks with possible errors
+    except TypeError:
+        print("invalid input type, try again.")
+    except UnboundLocalError:
+        print("coding error")
+    except ValueError:
+        print("value error, try again")
+
+@app.get("/api/search")
+def search_blocks():
+    try:
+        error = dbhelper.check_endpoint_info(request.args,["search"])
+        if(error != None):
+            return make_response(jsonify(error),400)
+        results = dbhelper.run_procedure("call search_blocks(?)",[request.args.get("search")])
+        if(type(results) == list):
+            return make_response(jsonify(results),200)
+        else:
+            return make_response("sorry something went wrong",500)
+    # some except blocks with possible errors
+    except TypeError:
+        print("invalid input type, try again.")
+    except UnboundLocalError:
+        print("coding error")
+    except ValueError:
+        print("value error, try again") 
+
 if(dbcreds.production_mode == True):
     print("Running Production Mode")
     import bjoern #type: ignore
